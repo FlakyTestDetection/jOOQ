@@ -2284,7 +2284,7 @@ class ParserImpl implements Parser {
         TableOptionalOnStep<?> s0;
         TablePartitionByStep<?> s1;
         TableOnStep<?> s2;
-        s2 = s1 = s0 = left.join(right, joinType);
+        s2 = s1 = (TablePartitionByStep<?>) (s0 = left.join(right, joinType));
 
         switch (joinType) {
             case LEFT_OUTER_JOIN:
@@ -4844,6 +4844,7 @@ class ParserImpl implements Parser {
             case 'T':
                 if (parseKeywordIf(ctx, "TEXT"))
                     return SQLDataType.CLOB;
+
                 else if (parseKeywordIf(ctx, "TIMESTAMP WITH TIME ZONE") ||
                          parseKeywordIf(ctx, "TIMESTAMPTZ"))
                     return SQLDataType.TIMESTAMPWITHTIMEZONE;
