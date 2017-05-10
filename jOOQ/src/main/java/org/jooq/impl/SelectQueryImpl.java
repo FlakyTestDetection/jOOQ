@@ -814,15 +814,21 @@ final class SelectQueryImpl<R extends Record> extends AbstractResultQuery<R> imp
                     if (wrapQueryExpressionBodyInDerivedTable)
                         c.qualify(false);
 
-                    // [#2580] When DISTINCT is applied, we mustn't use ROW_NUMBER() OVER(),
+                    // [#2580] FETCH NEXT n ROWS ONLY emulation:
+                    // -----------------------------------------
+                    // When DISTINCT is applied, we mustn't use ROW_NUMBER() OVER(),
                     // which changes the DISTINCT semantics. Instead, use DENSE_RANK() OVER(),
                     // ordering by the SELECT's ORDER BY clause AND all the expressions from
                     // the projection
-                    // [#6197] TODO: What about the combination of DISTINCT and WITH TIES?
-                    c.visit(distinct
-                        ? DSL.denseRank().over(orderBy(getNonEmptyOrderByForDistinct(c.configuration())))
-                        : getLimit().withTies()
+                    //
+                    // [#6197] FETCH NEXT n ROWS WITH TIES emulation:
+                    // ----------------------------------------------
+                    // DISTINCT seems irrelevant here (to be proven)
+
+                    c.visit(getLimit().withTies()
                         ? DSL.rank().over(orderBy(getNonEmptyOrderBy(c.configuration())))
+                        : distinct
+                        ? DSL.denseRank().over(orderBy(getNonEmptyOrderByForDistinct(c.configuration())))
                         : DSL.rowNumber().over(orderBy(getNonEmptyOrderBy(c.configuration())))
                     );
 
@@ -1471,11 +1477,15 @@ final class SelectQueryImpl<R extends Record> extends AbstractResultQuery<R> imp
             context.visit(actualLimit);
     }
 
+    private final boolean wrapQueryExpressionBodyInDerivedTable(Context<?> ctx) {
+        return true
 
 
 
 
 
+        ;
+    }
 
 
 
@@ -1894,6 +1904,11 @@ final class SelectQueryImpl<R extends Record> extends AbstractResultQuery<R> imp
         return (unionOp.size() == 0) ? limit : unionLimit;
     }
 
+    final SortFieldList getNonEmptyOrderBy(Configuration configuration) {
+        if (getOrderBy().isEmpty()) {
+            SortFieldList result = new SortFieldList();
+
+            switch (configuration.family()) {
 
 
 
@@ -1905,30 +1920,25 @@ final class SelectQueryImpl<R extends Record> extends AbstractResultQuery<R> imp
 
 
 
+                default:
+                    result.add(DSL.field("({select} 0)").asc());
+                    break;
+            }
+            return result;
+        }
 
+        return getOrderBy();
+    }
 
+    final SortFieldList getNonEmptyOrderByForDistinct(Configuration configuration) {
+        SortFieldList order = new SortFieldList();
+        order.addAll(getNonEmptyOrderBy(configuration));
 
+        for (Field<?> field : getSelect())
+            order.add(field.asc());
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        return order;
+    }
 
     @Override
     public final void addOrderBy(Collection<? extends SortField<?>> fields) {
