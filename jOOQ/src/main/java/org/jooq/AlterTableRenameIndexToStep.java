@@ -34,26 +34,30 @@
  */
 package org.jooq;
 
+// ...
+import static org.jooq.SQLDialect.H2;
+import static org.jooq.SQLDialect.HSQLDB;
+import static org.jooq.SQLDialect.MYSQL;
+// ...
+import static org.jooq.SQLDialect.POSTGRES;
+
 /**
  * The step in the <code>ALTER TABLE</code> DSL used to <code>RENAME</code>
- * constraints.
+ * indexes.
  *
  * @author Lukas Eder
  */
-public interface AlterTableRenameConstraintToStep {
+public interface AlterTableRenameIndexToStep {
 
     /**
-     * Specify a new constraint name.
+     * Specify a new index name.
      */
-    AlterTableFinalStep to(Constraint newName);
-
-    /**
-     * Specify a new constraint name.
-     */
+    @Support({ H2, HSQLDB, MYSQL, POSTGRES })
     AlterTableFinalStep to(Name newName);
 
     /**
-     * Specify a new constraint name.
+     * Specify a new index name.
      */
+    @Support({ H2, HSQLDB, MYSQL, POSTGRES })
     AlterTableFinalStep to(String newName);
 }
