@@ -3725,4 +3725,22 @@ final class Tools {
 
         return DSL.field(DSL.name(name), field.getDataType());
     }
+
+    static final <R extends Record> Table<R> aliased(Table<R> table) {
+        if (table instanceof TableImpl)
+            return ((TableImpl<R>) table).getAliasedTable();
+        else if (table instanceof TableAlias)
+            return ((TableAlias<R>) table).getAliasedTable();
+        else
+            return null;
+    }
+
+    static final Alias<? extends Table<?>> alias(Table<?> table) {
+        if (table instanceof TableImpl)
+            return ((TableImpl<?>) table).alias;
+        else if (table instanceof TableAlias)
+            return ((TableAlias<?>) table).alias;
+        else
+            return null;
+    }
 }
