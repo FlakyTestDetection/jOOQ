@@ -536,18 +536,21 @@ class ParserImpl implements Parser {
 
         List<CommonTableExpression<?>> cte = new ArrayList<CommonTableExpression<?>>();
         do {
-
             Name table = parseIdentifier(ctx);
+            DerivedColumnList dcl = null;
 
-            // [#6022] Allow unquoted identifiers for columns
-            parse(ctx, '(');
-            List<Name> columnNames = parseIdentifiers(ctx);
-            parse(ctx, ')');
-            DerivedColumnList dcl = table.fields(columnNames.toArray(EMPTY_NAME));
+            if (parseIf(ctx, '(')) {
+                List<Name> columnNames = parseIdentifiers(ctx);
+                parse(ctx, ')');
+                dcl = table.fields(columnNames.toArray(EMPTY_NAME));
+            }
+
             parseKeyword(ctx, "AS");
             parse(ctx, '(');
-            cte.add(dcl.as(parseSelect(ctx)));
+            Select<?> select = parseSelect(ctx);
             parse(ctx, ')');
+
+            cte.add(dcl != null ? dcl.as(select) : table.as(select));
         }
         while (parseIf(ctx, ','));
 
@@ -2340,6 +2343,8 @@ class ParserImpl implements Parser {
 
             case JOIN:
             case STRAIGHT_JOIN:
+            case LEFT_SEMI_JOIN:
+            case LEFT_ANTI_JOIN:
                 boolean on = parseKeywordIf(ctx, "ON");
 
                 if (on) {
@@ -5244,9 +5249,19 @@ class ParserImpl implements Parser {
         else if (parseKeywordIf(ctx, "JOIN"))
             return JoinType.JOIN;
         else if (parseKeywordIf(ctx, "LEFT")) {
-            parseKeywordIf(ctx, "OUTER");
-            parseKeyword(ctx, "JOIN");
-            return JoinType.LEFT_OUTER_JOIN;
+            if (parseKeywordIf(ctx, "SEMI")) {
+                parseKeyword(ctx, "JOIN");
+                return JoinType.LEFT_SEMI_JOIN;
+            }
+            else if (parseKeywordIf(ctx, "ANTI")) {
+                parseKeyword(ctx, "JOIN");
+                return JoinType.LEFT_ANTI_JOIN;
+            }
+            else {
+                parseKeywordIf(ctx, "OUTER");
+                parseKeyword(ctx, "JOIN");
+                return JoinType.LEFT_OUTER_JOIN;
+            }
         }
         else if (parseKeywordIf(ctx, "RIGHT")) {
             parseKeywordIf(ctx, "OUTER");
