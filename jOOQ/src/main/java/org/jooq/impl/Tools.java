@@ -47,6 +47,7 @@ import static org.jooq.SQLDialect.MARIADB;
 import static org.jooq.SQLDialect.MYSQL;
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
+// ...
 import static org.jooq.conf.BackslashEscaping.DEFAULT;
 import static org.jooq.conf.BackslashEscaping.ON;
 import static org.jooq.conf.ParamType.INLINED;
@@ -55,6 +56,8 @@ import static org.jooq.conf.ParamType.NAMED_OR_INLINED;
 import static org.jooq.conf.SettingsTools.getBackslashEscaping;
 import static org.jooq.conf.SettingsTools.reflectionCaching;
 import static org.jooq.conf.SettingsTools.updatablePrimaryKeys;
+import static org.jooq.conf.ThrowExceptions.THROW_FIRST;
+import static org.jooq.conf.ThrowExceptions.THROW_NONE;
 import static org.jooq.impl.DDLStatementType.ALTER_TABLE;
 import static org.jooq.impl.DDLStatementType.ALTER_VIEW;
 import static org.jooq.impl.DDLStatementType.CREATE_INDEX;
@@ -194,6 +197,7 @@ import org.jooq.RecordType;
 import org.jooq.RenderContext;
 import org.jooq.RenderContext.CastMode;
 import org.jooq.Result;
+import org.jooq.ResultOrRows;
 import org.jooq.Results;
 import org.jooq.Row;
 import org.jooq.RowN;
@@ -210,9 +214,11 @@ import org.jooq.UDTRecord;
 import org.jooq.UpdatableRecord;
 import org.jooq.conf.BackslashEscaping;
 import org.jooq.conf.Settings;
+import org.jooq.conf.ThrowExceptions;
 import org.jooq.exception.DataAccessException;
 import org.jooq.exception.MappingException;
 import org.jooq.exception.TooManyRowsException;
+import org.jooq.impl.ResultsImpl.ResultOrRowsImpl;
 import org.jooq.impl.Tools.Cache.CachedOperation;
 import org.jooq.tools.JooqLogger;
 import org.jooq.tools.StringUtils;
@@ -433,6 +439,25 @@ final class Tools {
          * list's parentheses).
          */
         DATA_INSERT_SELECT_WITHOUT_INSERT_COLUMN_LIST,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     }
 
     /**
@@ -919,11 +944,16 @@ final class Tools {
     }
 
     static final Field<?>[] fields(int length) {
-        Field<?>[] result = new Field[length];
+        return fields(length, SQLDataType.OTHER);
+    }
+
+    @SuppressWarnings("unchecked")
+    static final <T> Field<T>[] fields(int length, DataType<T> type) {
+        Field<T>[] result = new Field[length];
         Name[] names = fieldNames(length);
 
         for (int i = 0; i < length; i++)
-            result[i] = DSL.field(name(names[i]));
+            result[i] = DSL.field(name(names[i]), type);
 
         return result;
     }
@@ -3018,11 +3048,17 @@ final class Tools {
     // ------------------------------------------------------------------------
 
     /**
-     * [#3011] [#3054] Consume additional exceptions if there are any and append
-     * them to the <code>previous</code> exception's
+     * [#3011] [#3054] [#6390] [#6413] Consume additional exceptions if there
+     * are any and append them to the <code>previous</code> exception's
      * {@link SQLException#getNextException()} list.
      */
     static final void consumeExceptions(Configuration configuration, PreparedStatement stmt, SQLException previous) {
+
+        // [#6413] Don't consume any additional exceptions if we're throwing only the first.
+        ThrowExceptions exceptions = configuration.settings().getThrowExceptions();
+        if (exceptions == THROW_FIRST)
+            return;
+
 
 
 
@@ -3073,9 +3109,10 @@ final class Tools {
      * [#5666] Handle the complexity of each dialect's understanding of
      * correctly calling {@link Statement#execute()}.
      */
-    static final void executeStatementAndGetFirstResultSet(ExecuteContext ctx) throws SQLException {
+    static final SQLException executeStatementAndGetFirstResultSet(ExecuteContext ctx, int skipUpdateCounts) throws SQLException {
         PreparedStatement stmt = ctx.statement();
 
+        try {
 
 
 
@@ -3121,50 +3158,116 @@ final class Tools {
 
 
 
-                         if (stmt.execute()) {
-            ctx.resultSet(stmt.getResultSet());
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                             if (stmt.execute()) {
+                ctx.resultSet(stmt.getResultSet());
+            }
+
+            else {
+                ctx.resultSet(null);
+                ctx.rows(stmt.getUpdateCount());
+            }
+
+            return null;
         }
 
-        else {
-            ctx.resultSet(null);
-            ctx.rows(stmt.getUpdateCount());
+        // [#3011] [#3054] [#6390] [#6413] Consume additional exceptions if there are any
+        catch (SQLException e) {
+            if (ctx.settings().getThrowExceptions() != THROW_NONE) {
+                consumeExceptions(ctx.configuration(), ctx.statement(), e);
+                throw e;
+            }
+            else {
+                return e;
+            }
         }
     }
 
     /**
      * [#3681] Consume all {@link ResultSet}s from a JDBC {@link Statement}.
      */
-    static final void consumeResultSets(ExecuteContext ctx, ExecuteListener listener, Results results, Intern intern) throws SQLException {
+    static final void consumeResultSets(ExecuteContext ctx, ExecuteListener listener, Results results, Intern intern, SQLException prev) throws SQLException {
         boolean anyResults = false;
         int i = 0;
         int rows = (ctx.resultSet() == null) ? ctx.rows() : 0;
 
         for (i = 0; i < maxConsumedResults; i++) {
-            if (ctx.resultSet() != null) {
-                anyResults = true;
+            try {
+                if (ctx.resultSet() != null) {
+                    anyResults = true;
 
-                Field<?>[] fields = new MetaDataFieldProvider(ctx.configuration(), ctx.resultSet().getMetaData()).getFields();
-                Cursor<Record> c = new CursorImpl<Record>(ctx, listener, fields, intern != null ? intern.internIndexes(fields) : null, true, false);
-                results.resultsOrRows().add(new ResultsImpl.ResultOrRowsImpl(c.fetch()));
-            }
-            else {
-                if (rows != -1)
-                    results.resultsOrRows().add(new ResultsImpl.ResultOrRowsImpl(rows));
-                else
-                    break;
+                    Field<?>[] fields = new MetaDataFieldProvider(ctx.configuration(), ctx.resultSet().getMetaData()).getFields();
+                    Cursor<Record> c = new CursorImpl<Record>(ctx, listener, fields, intern != null ? intern.internIndexes(fields) : null, true, false);
+                    results.resultsOrRows().add(new ResultOrRowsImpl(c.fetch()));
+                }
+                else if (prev == null) {
+                    if (rows != -1)
+                        results.resultsOrRows().add(new ResultOrRowsImpl(rows));
+                    else
+                        break;
+                }
+
+                if (ctx.statement().getMoreResults()) {
+                    ctx.resultSet(ctx.statement().getResultSet());
+                }
+                else {
+                    rows = ctx.statement().getUpdateCount();
+                    ctx.rows(rows);
+
+                    if (rows != -1)
+                        ctx.resultSet(null);
+                    else
+                        break;
+                }
+
+                prev = null;
             }
 
-            if (ctx.statement().getMoreResults()) {
-                ctx.resultSet(ctx.statement().getResultSet());
-            }
-            else {
-                rows = ctx.statement().getUpdateCount();
-                ctx.rows(rows);
+            // [#3011] [#3054] [#6390] [#6413] Consume additional exceptions if there are any
+            catch (SQLException e) {
+                prev = e;
 
-                if (rows != -1)
-                    ctx.resultSet(null);
-                else
-                    break;
+                if (ctx.settings().getThrowExceptions() == THROW_NONE) {
+                    ctx.sqlException(e);
+                    results.resultsOrRows().add(new ResultOrRowsImpl(Tools.translate(ctx.sql(), e)));
+                }
+                else {
+                    consumeExceptions(ctx.configuration(), ctx.statement(), e);
+                    throw e;
+                }
             }
         }
 
@@ -3175,6 +3278,25 @@ final class Tools {
         // Otherwise, this call is not supported by ojdbc or CUBRID [#4440]
         if (anyResults && ctx.family() != CUBRID)
             ctx.statement().getMoreResults(Statement.CLOSE_ALL_RESULTS);
+
+        // [#6413] For consistency reasons, any exceptions that have been placed in ResultOrRow elements must
+        //         be linked, just as if they were collected using ThrowExceptions == THROW_ALL
+        if (ctx.settings().getThrowExceptions() == THROW_NONE) {
+            SQLException s1 = null;
+
+            for (ResultOrRows r : results.resultsOrRows()) {
+                DataAccessException d = r.exception();
+
+                if (d != null && d.getCause() instanceof SQLException) {
+                    SQLException s2 = (SQLException) d.getCause();
+
+                    if (s1 != null)
+                        s1.setNextException(s2);
+
+                    s1 = s2;
+                }
+            }
+        }
     }
 
     private static final Pattern NEW_LINES = Pattern.compile("[\\r\\n]+");
@@ -3830,5 +3952,23 @@ final class Tools {
             return ((TableAlias<?>) table).alias;
         else
             return null;
+    }
+
+    static final void increment(Map<Object, Object> data, DataKey key) {
+        Integer updateCounts = (Integer) data.get(key);
+        if (updateCounts == null)
+            updateCounts = 0;
+        data.put(key, updateCounts + 1);
+    }
+
+    static Field<?> tableField(Table<?> table, Object field) {
+        if (field instanceof Field<?>)
+            return (Field<?>) field;
+        else if (field instanceof Name)
+            return table.field((Name) field);
+        else if (field instanceof String)
+            return table.field((String) field);
+        else
+            throw new IllegalArgumentException("Field type not supported: " + field);
     }
 }

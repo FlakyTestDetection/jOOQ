@@ -2254,7 +2254,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new query holding plain SQL.
      * <p>
-     * There must not be any binding variables contained in the SQL
+     * There must not be any bind variables contained in the SQL
      * <p>
      * Use this method, when you want to take advantage of the many ways to
      * fetch results in jOOQ, using {@link ResultQuery}. Some examples:
@@ -2300,7 +2300,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
     /**
      * Create a new query holding plain SQL.
      * <p>
-     * There must not be any binding variables contained in the SQL
+     * There must not be any bind variables contained in the SQL
      * <p>
      * Use this method, when you want to take advantage of the many ways to
      * fetch results in jOOQ, using {@link ResultQuery}. Some examples:
@@ -8146,7 +8146,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createSchema(String)
      */
-    @Support({ H2, HSQLDB, POSTGRES })
+    @Support({ DERBY, H2, HSQLDB, POSTGRES })
     CreateSchemaFinalStep createSchema(String schema);
 
     /**
@@ -8154,7 +8154,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createSchema(Name)
      */
-    @Support({ H2, HSQLDB, POSTGRES })
+    @Support({ DERBY, H2, HSQLDB, POSTGRES })
     CreateSchemaFinalStep createSchema(Name schema);
 
     /**
@@ -8162,7 +8162,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#createSchema(Schema)
      */
-    @Support({ H2, HSQLDB, POSTGRES })
+    @Support({ DERBY, H2, HSQLDB, POSTGRES })
     CreateSchemaFinalStep createSchema(Schema schema);
 
     /**
@@ -8870,7 +8870,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropSchema(String)
      */
-    @Support({ H2, HSQLDB, POSTGRES })
+    @Support({ DERBY, H2, HSQLDB, POSTGRES })
     DropSchemaStep dropSchema(String schema);
 
     /**
@@ -8878,7 +8878,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropSchema(Name)
      */
-    @Support({ H2, HSQLDB, POSTGRES })
+    @Support({ DERBY, H2, HSQLDB, POSTGRES })
     DropSchemaStep dropSchema(Name schema);
 
     /**
@@ -8886,7 +8886,7 @@ public interface DSLContext extends Scope , AutoCloseable  {
      *
      * @see DSL#dropSchema(Schema)
      */
-    @Support({ H2, HSQLDB, POSTGRES })
+    @Support({ DERBY, H2, HSQLDB, POSTGRES })
     DropSchemaStep dropSchema(Schema schema);
 
     /**

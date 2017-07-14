@@ -67,6 +67,7 @@ import org.jooq.conf.RenderNameStyle;
 import org.jooq.conf.Settings;
 import org.jooq.exception.ControlFlowSignal;
 import org.jooq.exception.DataAccessException;
+import org.jooq.impl.Tools.DataKey;
 import org.jooq.tools.JooqLogger;
 import org.jooq.tools.StringUtils;
 
@@ -90,6 +91,7 @@ class DefaultRenderContext extends AbstractContext<RenderContext> implements Ren
     private int                           printMargin        = 80;
     private boolean                       separator;
     private boolean                       newline;
+    private int                           skipUpdateCounts;
 
     // [#1632] Cached values from Settings
     RenderKeywordStyle                    cachedRenderKeywordStyle;
@@ -142,6 +144,14 @@ class DefaultRenderContext extends AbstractContext<RenderContext> implements Ren
     // RenderContext API
     // ------------------------------------------------------------------------
 
+    final int peekSkipUpdateCounts() {
+        return skipUpdateCounts;
+    }
+
+    final void incrementSkipUpdateCounts() {
+        skipUpdateCounts++;
+    }
+
     @Override
     public final String peekAlias() {
         return "alias_" + (alias + 1);
@@ -154,7 +164,9 @@ class DefaultRenderContext extends AbstractContext<RenderContext> implements Ren
 
     @Override
     public final String render() {
-        return sql.toString();
+        String prepend = null;
+        String result = sql.toString();
+        return prepend == null ? result : prepend + result;
     }
 
     @Override

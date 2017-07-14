@@ -161,6 +161,17 @@ public class JavaGenerator extends AbstractGenerator {
     private static final Map<DataType<?>, String> SQLDATATYPE_LITERAL_LOOKUP;
 
     /**
+     * [#6411] A set providing access to SQLDataTypes that can have length.
+     */
+    private static final Set<String>              SQLDATATYPE_WITH_LENGTH;
+
+    /**
+     * [#6411] A set providing access to SQLDataTypes that can have precision
+     * (and scale).
+     */
+    private static final Set<String>              SQLDATATYPE_WITH_PRECISION;
+
+    /**
      * An overall stop watch to measure the speed of source code generation
      */
     private final StopWatch                       watch                        = new StopWatch();
@@ -202,6 +213,8 @@ public class JavaGenerator extends AbstractGenerator {
 
     static {
         SQLDATATYPE_LITERAL_LOOKUP = new IdentityHashMap<DataType<?>, String>();
+        SQLDATATYPE_WITH_LENGTH = new HashSet<String>();
+        SQLDATATYPE_WITH_PRECISION = new HashSet<String>();
 
         try {
             for (java.lang.reflect.Field f : SQLDataType.class.getFields()) {
@@ -209,6 +222,21 @@ public class JavaGenerator extends AbstractGenerator {
                     Modifier.isStatic(f.getModifiers()) &&
                     Modifier.isFinal(f.getModifiers()))
                     SQLDATATYPE_LITERAL_LOOKUP.put((DataType<?>) f.get(SQLDataType.class), f.getName());
+            }
+
+            for (java.lang.reflect.Method m : SQLDataType.class.getMethods()) {
+                if (Modifier.isPublic(m.getModifiers()) &&
+                    Modifier.isStatic(m.getModifiers()) &&
+                    m.getParameterCount() == 2)
+                    SQLDATATYPE_WITH_PRECISION.add(m.getName());
+            }
+
+            for (java.lang.reflect.Method m : SQLDataType.class.getMethods()) {
+                if (Modifier.isPublic(m.getModifiers()) &&
+                    Modifier.isStatic(m.getModifiers()) &&
+                    m.getParameterCount() == 1 &&
+                    !SQLDATATYPE_WITH_PRECISION.contains(m.getName()))
+                    SQLDATATYPE_WITH_LENGTH.add(m.getName());
             }
         }
         catch (Exception e) {
@@ -629,6 +657,7 @@ public class JavaGenerator extends AbstractGenerator {
     protected void generateRelations(SchemaDefinition schema) {
         log.info("Generating Keys");
 
+        boolean empty = true;
         JavaWriter out = newJavaWriter(new File(getFile(schema).getParentFile(), "Keys.java"));
         printPackage(out, schema);
         printClassJavadoc(out,
@@ -652,6 +681,8 @@ public class JavaGenerator extends AbstractGenerator {
                 IdentityDefinition identity = table.getIdentity();
 
                 if (identity != null) {
+                    empty = false;
+
                     final String identityType = out.ref(getStrategy().getFullJavaClassName(identity.getColumn().getContainer(), Mode.RECORD));
                     final String columnType = out.ref(getJavaType(identity.getColumn().getType()));
                     final String identityId = getStrategy().getJavaIdentifier(identity.getColumn().getContainer());
@@ -681,6 +712,8 @@ public class JavaGenerator extends AbstractGenerator {
                 List<UniqueKeyDefinition> uniqueKeys = table.getUniqueKeys();
 
                 for (UniqueKeyDefinition uniqueKey : uniqueKeys) {
+                    empty = false;
+
                     final String keyType = out.ref(getStrategy().getFullJavaClassName(uniqueKey.getTable(), Mode.RECORD));
                     final String keyId = getStrategy().getJavaIdentifier(uniqueKey);
                     final int block = allUniqueKeys.size() / INITIALISER_SIZE;
@@ -707,6 +740,8 @@ public class JavaGenerator extends AbstractGenerator {
                 List<ForeignKeyDefinition> foreignKeys = table.getForeignKeys();
 
                 for (ForeignKeyDefinition foreignKey : foreignKeys) {
+                    empty = false;
+
                     final String keyType = out.ref(getStrategy().getFullJavaClassName(foreignKey.getKeyTable(), Mode.RECORD));
                     final String referencedType = out.ref(getStrategy().getFullJavaClassName(foreignKey.getReferencedTable(), Mode.RECORD));
                     final String keyId = getStrategy().getJavaIdentifier(foreignKey);
@@ -770,13 +805,23 @@ public class JavaGenerator extends AbstractGenerator {
         }
 
         out.println("}");
-        closeJavaWriter(out);
 
-        watch.splitInfo("Keys generated");
+        if (empty) {
+            log.info("Skipping empty keys");
+        }
+        else {
+            closeJavaWriter(out);
+            watch.splitInfo("Keys generated");
+        }
     }
 
     protected void generateIndexes(SchemaDefinition schema) {
         log.info("Generating Indexes");
+
+        if (database.getIndexes(schema).isEmpty()) {
+            log.info("Skipping empty indexes");
+            return;
+        }
 
         JavaWriter out = newJavaWriter(new File(getFile(schema).getParentFile(), "Indexes.java"));
         printPackage(out, schema);
@@ -4412,7 +4457,9 @@ public class JavaGenerator extends AbstractGenerator {
             DataTypeDefinition type = column.getType();
 
             // [#5128] defaulted columns are nullable in Java
-            if (!column.getType().isNullable() && !column.getType().isDefaulted())
+            if (!column.getType().isNullable() &&
+                !column.getType().isDefaulted() &&
+                !column.getType().isIdentity())
                 out.tab(1).println("@%s", out.ref("javax.validation.constraints.NotNull"));
 
             if ("java.lang.String".equals(getJavaType(type))) {
@@ -5638,16 +5685,26 @@ public class JavaGenerator extends AbstractGenerator {
                 sb.append(sqlDataTypeRef);
 
                 if (dataType.hasPrecision() && p > 0) {
-                    sb.append(".precision(").append(p);
+
+                    // [#6411] Call static method if available, rather than instance method
+                    if (SQLDATATYPE_WITH_PRECISION.contains(literal))
+                        sb.append('(').append(p);
+                    else
+                        sb.append(".precision(").append(p);
 
                     if (dataType.hasScale() && s > 0)
                         sb.append(", ").append(s);
 
-                    sb.append(")");
+                    sb.append(')');
                 }
 
                 if (dataType.hasLength() && l > 0)
-                    sb.append(".length(").append(l).append(")");
+
+                    // [#6411] Call static method if available, rather than instance method
+                    if (SQLDATATYPE_WITH_LENGTH.contains(literal))
+                        sb.append("(").append(l).append(")");
+                    else
+                        sb.append(".length(").append(l).append(")");
 
                 if (!dataType.nullable())
                     sb.append(".nullable(false)");
