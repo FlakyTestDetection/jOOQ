@@ -39,12 +39,15 @@ import static org.jooq.SQLDialect.CUBRID;
 import static org.jooq.SQLDialect.FIREBIRD_3_0;
 // ...
 // ...
+import static org.jooq.SQLDialect.MYSQL_8_0;
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
 // ...
 // ...
 // ...
 // ...
+
+import java.util.Collection;
 
 /**
  * This type is used for the window function DSL API.
@@ -67,8 +70,14 @@ public interface WindowPartitionByStep<T> extends WindowOrderByStep<T> {
     /**
      * Add a <code>PARTITION BY</code> clause to the window functions.
      */
-    @Support({ CUBRID, FIREBIRD_3_0, POSTGRES })
+    @Support({ CUBRID, FIREBIRD_3_0, MYSQL_8_0, POSTGRES })
     WindowOrderByStep<T> partitionBy(Field<?>... fields);
+
+    /**
+     * Add a <code>PARTITION BY</code> clause to the window functions.
+     */
+    @Support({ CUBRID, FIREBIRD_3_0, MYSQL_8_0, POSTGRES })
+    WindowOrderByStep<T> partitionBy(Collection<? extends Field<?>> fields);
 
     /**
      * Add a <code>PARTITION BY 1</code> clause to the window functions, where
@@ -76,8 +85,13 @@ public interface WindowPartitionByStep<T> extends WindowOrderByStep<T> {
      * <p>
      * This clause is not supported as such in the CUBRID and Sybase dialects.
      * If you use it, jOOQ will simply ignore it.
+     *
+     * @deprecated - 3.10 - [#6427] - This synthetic clause is no longer
+     *             supported, use {@link #partitionBy(Field...)} instead, or
+     *             omit the clause entirely.
      */
-    @Support({ CUBRID, FIREBIRD_3_0, POSTGRES })
+    @Deprecated
+    @Support({ CUBRID, FIREBIRD_3_0, MYSQL_8_0, POSTGRES })
     WindowOrderByStep<T> partitionByOne();
 
 }
