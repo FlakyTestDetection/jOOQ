@@ -334,7 +334,12 @@ class ParserImpl implements Parser {
 
     @Override
     public final Queries parse(String sql) {
-        ParserContext ctx = new ParserContext(dsl, sql);
+        return parse(sql, new Object[0]);
+    }
+
+    @Override
+    public final Queries parse(String sql, Object... bindings) {
+        ParserContext ctx = new ParserContext(dsl, sql, bindings);
         List<Query> result = new ArrayList<Query>();
         do {
             Query query = parseQuery(ctx, false);
@@ -343,86 +348,105 @@ class ParserImpl implements Parser {
         }
         while (parseIf(ctx, ";"));
 
-        if (!ctx.done())
-            throw ctx.exception("Unexpected content after end of queries input");
-
+        ctx.done("Unexpected content after end of queries input");
         return dsl.queries(result);
     }
 
     @Override
     public final Query parseQuery(String sql) {
-        ParserContext ctx = new ParserContext(dsl, sql);
+        return parseQuery(sql, new Object[0]);
+    }
+
+    @Override
+    public final Query parseQuery(String sql, Object... bindings) {
+        ParserContext ctx = new ParserContext(dsl, sql, bindings);
         Query result = parseQuery(ctx, false);
 
-        if (!ctx.done())
-            throw ctx.exception("Unexpected content after end of query input");
-
+        ctx.done("Unexpected content after end of query input");
         return result;
     }
 
     @Override
     public final ResultQuery<?> parseResultQuery(String sql) {
-        ParserContext ctx = new ParserContext(dsl, sql);
+        return parseResultQuery(sql, new Object[0]);
+    }
+
+    @Override
+    public final ResultQuery<?> parseResultQuery(String sql, Object... bindings) {
+        ParserContext ctx = new ParserContext(dsl, sql, bindings);
         ResultQuery<?> result = (ResultQuery<?>) parseQuery(ctx, true);
 
-        if (!ctx.done())
-            throw ctx.exception("Unexpected content after end of query input");
-
+        ctx.done("Unexpected content after end of query input");
         return result;
     }
 
     @Override
     public final Table<?> parseTable(String sql) {
-        ParserContext ctx = new ParserContext(dsl, sql);
+        return parseTable(sql, new Object[0]);
+    }
+
+    @Override
+    public final Table<?> parseTable(String sql, Object... bindings) {
+        ParserContext ctx = new ParserContext(dsl, sql, bindings);
         Table<?> result = parseTable(ctx);
 
-        if (!ctx.done())
-            throw ctx.exception("Unexpected content after end of table input");
-
+        ctx.done("Unexpected content after end of table input");
         return result;
     }
 
     @Override
     public final Field<?> parseField(String sql) {
-        ParserContext ctx = new ParserContext(dsl, sql);
+        return parseField(sql, new Object[0]);
+    }
+
+    @Override
+    public final Field<?> parseField(String sql, Object... bindings) {
+        ParserContext ctx = new ParserContext(dsl, sql, bindings);
         Field<?> result = parseField(ctx);
 
-        if (!ctx.done())
-            throw ctx.exception("Unexpected content after end of field input");
-
+        ctx.done("Unexpected content after end of field input");
         return result;
     }
 
     @Override
     public final Row parseRow(String sql) {
-        ParserContext ctx = new ParserContext(dsl, sql);
+        return parseRow(sql, new Object[0]);
+    }
+
+    @Override
+    public final Row parseRow(String sql, Object... bindings) {
+        ParserContext ctx = new ParserContext(dsl, sql, bindings);
         RowN result = parseRow(ctx);
 
-        if (!ctx.done())
-            throw ctx.exception("Unexpected content after end of row input");
-
+        ctx.done("Unexpected content after end of row input");
         return result;
     }
 
     @Override
     public final Condition parseCondition(String sql) {
-        ParserContext ctx = new ParserContext(dsl, sql);
+        return parseCondition(sql, new Object[0]);
+    }
+
+    @Override
+    public final Condition parseCondition(String sql, Object... bindings) {
+        ParserContext ctx = new ParserContext(dsl, sql, bindings);
         Condition result = parseCondition(ctx);
 
-        if (!ctx.done())
-            throw ctx.exception("Unexpected content after end of condition input");
-
+        ctx.done("Unexpected content after end of condition input");
         return result;
     }
 
     @Override
     public final Name parseName(String sql) {
-        ParserContext ctx = new ParserContext(dsl, sql);
+        return parseName(sql, new Object[0]);
+    }
+
+    @Override
+    public final Name parseName(String sql, Object... bindings) {
+        ParserContext ctx = new ParserContext(dsl, sql, bindings);
         Name result = parseName(ctx);
 
-        if (!ctx.done())
-            throw ctx.exception("Unexpected content after end of name input");
-
+        ctx.done("Unexpected content after end of name input");
         return result;
     }
 
@@ -5055,11 +5079,11 @@ class ParserImpl implements Parser {
         switch (ctx.character()) {
             case '?':
                 parse(ctx, '?');
-                return DSL.val(null, Object.class);
+                return DSL.val(ctx.nextBinding(), Object.class);
 
             case ':':
                 parse(ctx, ':');
-                return DSL.param(parseIdentifier(ctx).last());
+                return DSL.param(parseIdentifier(ctx).last(), ctx.nextBinding());
 
             default:
                 throw ctx.exception("Illegal bind variable character");
@@ -5692,12 +5716,15 @@ class ParserImpl implements Parser {
         private final char[]       sql;
         private final List<String> expectedTokens;
         private int                position = 0;
+        private final Object[]     bindings;
+        private int                bindIndex = 0;
 
-        ParserContext(DSLContext dsl, String sqlString) {
+        ParserContext(DSLContext dsl, String sqlString, Object[] bindings) {
             this.dsl = dsl;
             this.sqlString = sqlString;
             this.sql = sqlString.toCharArray();
             this.expectedTokens = new ArrayList<String>();
+            this.bindings = bindings;
         }
 
         ParserException internalError() {
@@ -5718,6 +5745,15 @@ class ParserImpl implements Parser {
 
         ParserException unexpectedToken() {
             return new ParserException(mark(), "Expected tokens: " + new TreeSet<String>(expectedTokens));
+        }
+
+        Object nextBinding() {
+            if (bindIndex < bindings.length)
+                return bindings[bindIndex++];
+            else if (bindings.length == 0)
+                return null;
+            else
+                throw exception("No binding provided for bind index " + (bindIndex + 1));
         }
 
         char character() {
@@ -5745,7 +5781,15 @@ class ParserImpl implements Parser {
         }
 
         boolean done() {
-            return position >= sql.length;
+            return position >= sql.length && (bindings.length == 0 || bindings.length == bindIndex);
+        }
+
+        boolean done(String message) {
+            if (done())
+                return true;
+            else
+                throw exception(message);
+
         }
 
         String mark() {
