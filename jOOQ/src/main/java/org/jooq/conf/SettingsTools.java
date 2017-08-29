@@ -202,7 +202,12 @@ public final class SettingsTools {
      * Clone some settings.
      */
     public static final Settings clone(Settings settings) {
-        return (Settings) settings.clone();
+        Settings result = (Settings) settings.clone();
+
+        if (result.renderFormatting != null)
+            result.renderFormatting = (RenderFormatting) result.renderFormatting.clone();
+
+        return result;
     }
 
     /**

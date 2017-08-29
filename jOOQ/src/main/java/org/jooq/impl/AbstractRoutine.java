@@ -44,6 +44,7 @@ import static org.jooq.SQLDialect.POSTGRES;
 // ...
 import static org.jooq.XMLFormat.RecordFormat.COLUMN_NAME_ELEMENTS;
 import static org.jooq.conf.ThrowExceptions.THROW_NONE;
+import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.function;
 import static org.jooq.impl.DSL.inline;
 import static org.jooq.impl.DSL.name;
@@ -61,12 +62,15 @@ import static org.jooq.impl.Keywords.K_END;
 import static org.jooq.impl.Keywords.K_FALSE;
 import static org.jooq.impl.Keywords.K_FOR;
 import static org.jooq.impl.Keywords.K_FROM;
+import static org.jooq.impl.Keywords.K_IS;
 import static org.jooq.impl.Keywords.K_NULL;
 import static org.jooq.impl.Keywords.K_OPEN;
 import static org.jooq.impl.Keywords.K_PASSING;
+import static org.jooq.impl.Keywords.K_RECORD;
 import static org.jooq.impl.Keywords.K_SELECT;
 import static org.jooq.impl.Keywords.K_THEN;
 import static org.jooq.impl.Keywords.K_TRUE;
+import static org.jooq.impl.Keywords.K_TYPE;
 import static org.jooq.impl.Keywords.K_WHEN;
 import static org.jooq.impl.Keywords.K_XMLTABLE;
 import static org.jooq.impl.Tools.EMPTY_FIELD;
@@ -101,6 +105,7 @@ import org.jooq.DataType;
 import org.jooq.ExecuteContext;
 import org.jooq.ExecuteListener;
 import org.jooq.Field;
+import org.jooq.Name;
 import org.jooq.Package;
 import org.jooq.Param;
 import org.jooq.Parameter;
@@ -733,6 +738,13 @@ public abstract class AbstractRoutine<T> extends AbstractQueryPart implements Ro
 
 
 
+
+
+
+
+
+
+
         {
             context.sql(" }");
         }
@@ -785,7 +797,48 @@ public abstract class AbstractRoutine<T> extends AbstractQueryPart implements Ro
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     private final void toSQLBegin(RenderContext context) {
 
@@ -972,30 +1025,9 @@ public abstract class AbstractRoutine<T> extends AbstractQueryPart implements Ro
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     private final void toSQLAssign(RenderContext context) {
+
+
 
 
 
@@ -1038,11 +1070,13 @@ public abstract class AbstractRoutine<T> extends AbstractQueryPart implements Ro
 
 
 
+
+
+
         context.sql('?');
     }
 
     private final void toSQLInParam(RenderContext context, Parameter<?> parameter, int index, Field<?> value) {
-
 
 
 
@@ -1283,6 +1317,10 @@ public abstract class AbstractRoutine<T> extends AbstractQueryPart implements Ro
 
 
     }
+
+
+
+
 
 
 
