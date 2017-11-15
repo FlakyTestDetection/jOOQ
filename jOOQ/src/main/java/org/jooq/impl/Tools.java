@@ -3610,6 +3610,27 @@ final class Tools {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             case FIREBIRD: {
                 beginExecuteImmediate(ctx);
                 break;
@@ -3631,6 +3652,34 @@ final class Tools {
 
     static final void endTryCatch(Context<?> ctx, DDLStatementType type, Boolean container, Boolean element) {
         switch (ctx.family()) {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

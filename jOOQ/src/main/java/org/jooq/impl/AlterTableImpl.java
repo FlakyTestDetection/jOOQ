@@ -755,6 +755,8 @@ final class AlterTableImpl extends AbstractQuery implements
 
 
 
+
+
                     case H2:
                     case POSTGRES:
                     default:
@@ -922,6 +924,9 @@ final class AlterTableImpl extends AbstractQuery implements
 
             if (ifExistsColumn) {
                 switch (family) {
+
+
+
 
 
 
