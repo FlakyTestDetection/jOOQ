@@ -77,7 +77,7 @@ final class DDL {
             this.flags.add(flag);
     }
 
-    final Queries queries(Table<?> table) {
+    private final Query createTable(Table<?> table) {
         List<Constraint> constraints = new ArrayList<Constraint>();
 
         if (flags.contains(TABLE)) {
@@ -96,11 +96,18 @@ final class DDL {
                     constraints.add(constraint(key.getName()).foreignKey(key.getFieldsArray()).references(key.getKey().getTable(), key.getKey().getFieldsArray()));
         }
 
-        return ctx.queries(
-            ctx.createTable(table)
-               .columns(table.fields())
-               .constraints(constraints)
-        );
+        return ctx.createTable(table)
+                  .columns(table.fields())
+                  .constraints(constraints);
+    }
+
+    final Queries queries(Table<?>... tables) {
+        Query[] queries = new Query[tables.length];
+
+        for (int i = 0; i < tables.length; i++)
+            queries[i] = createTable(tables[i]);
+
+        return ctx.queries(queries);
     }
 
     final Queries queries(Schema schema) {
