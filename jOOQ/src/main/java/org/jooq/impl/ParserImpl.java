@@ -283,6 +283,7 @@ import org.jooq.Field;
 import org.jooq.FieldOrRow;
 import org.jooq.GrantOnStep;
 import org.jooq.GrantToStep;
+import org.jooq.GrantWithGrantOptionStep;
 import org.jooq.GroupConcatOrderByStep;
 import org.jooq.GroupConcatSeparatorStep;
 import org.jooq.GroupField;
@@ -1313,11 +1314,16 @@ class ParserImpl implements Parser {
 
         GrantOnStep s1 = privileges == null ? ctx.dsl.grant(privilege) : ctx.dsl.grant(privileges);
         GrantToStep s2 = s1.on(table);
-        return user == null ? s2.toPublic() : s2.to(user);
+        GrantWithGrantOptionStep s3 = user == null ? s2.toPublic() : s2.to(user);
+
+        return parseKeywordIf(ctx, "WITH GRANT OPTION")
+            ? s3.withGrantOption()
+            : s3;
     }
 
     private static final DDLQuery parseRevoke(ParserContext ctx) {
         parseKeyword(ctx, "REVOKE");
+        boolean grantOptionFor = parseKeywordIf(ctx, "GRANT OPTION FOR");
         Privilege privilege = parsePrivilege(ctx);
         List<Privilege> privileges = null;
 
@@ -1334,7 +1340,12 @@ class ParserImpl implements Parser {
         parseKeywordIf(ctx, "TABLE");
         Table<?> table = parseTableName(ctx);
 
-        RevokeOnStep s1 = privileges == null ? ctx.dsl.revoke(privilege) : ctx.dsl.revoke(privileges);
+        RevokeOnStep s1 = null;
+        if (grantOptionFor)
+            s1 = privileges == null ? ctx.dsl.revokeGrantOptionFor(privilege) : ctx.dsl.revokeGrantOptionFor(privileges);
+        else
+            s1 = privileges == null ? ctx.dsl.revoke(privilege) : ctx.dsl.revoke(privileges);
+
         parseKeyword(ctx, "FROM");
         User user = parseKeywordIf(ctx, "PUBLIC") ? null : parseUser(ctx);
 
