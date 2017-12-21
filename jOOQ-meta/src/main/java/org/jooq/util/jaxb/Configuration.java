@@ -27,9 +27,9 @@ import javax.xml.bind.annotation.XmlType;
  *   &lt;complexContent&gt;
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType"&gt;
  *       &lt;all&gt;
- *         &lt;element name="logging" type="{http://www.jooq.org/xsd/jooq-codegen-3.10.0.xsd}Logging" minOccurs="0"/&gt;
- *         &lt;element name="jdbc" type="{http://www.jooq.org/xsd/jooq-codegen-3.10.0.xsd}Jdbc" minOccurs="0"/&gt;
- *         &lt;element name="generator" type="{http://www.jooq.org/xsd/jooq-codegen-3.10.0.xsd}Generator"/&gt;
+ *         &lt;element name="logging" type="{http://www.jooq.org/xsd/jooq-codegen-3.11.0.xsd}Logging" minOccurs="0"/&gt;
+ *         &lt;element name="jdbc" type="{http://www.jooq.org/xsd/jooq-codegen-3.11.0.xsd}Jdbc" minOccurs="0"/&gt;
+ *         &lt;element name="generator" type="{http://www.jooq.org/xsd/jooq-codegen-3.11.0.xsd}Generator"/&gt;
  *       &lt;/all&gt;
  *     &lt;/restriction&gt;
  *   &lt;/complexContent&gt;
@@ -49,7 +49,7 @@ import javax.xml.bind.annotation.XmlType;
 public class Configuration implements Serializable
 {
 
-    private final static long serialVersionUID = 31000L;
+    private final static long serialVersionUID = 31100L;
     @XmlSchemaType(name = "string")
     protected Logging logging;
     protected Jdbc jdbc;
