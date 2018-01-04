@@ -49,6 +49,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Scanner;
+import java.util.UUID;
 
 import org.jooq.DSLContext;
 import org.jooq.Queries;
@@ -57,6 +58,7 @@ import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.jooq.impl.ParserException;
 import org.jooq.tools.JooqLogger;
+import org.jooq.tools.jdbc.JDBCUtils;
 import org.jooq.util.SchemaDefinition;
 import org.jooq.util.h2.H2Database;
 
@@ -93,7 +95,7 @@ public class DDLDatabase extends H2Database {
                 Properties info = new Properties();
                 info.put("user", "sa");
                 info.put("password", "");
-                connection = new org.h2.Driver().connect("jdbc:h2:mem:jooq-meta-extensions", info);
+                connection = new org.h2.Driver().connect("jdbc:h2:mem:jooq-meta-extensions-" + UUID.randomUUID(), info);
 
                 InputStream in = null;
                 try {
@@ -149,6 +151,12 @@ public class DDLDatabase extends H2Database {
         }
 
         return DSL.using(connection);
+    }
+
+    @Override
+    public void close() {
+        JDBCUtils.safeClose(connection);
+        super.close();
     }
 
     @Override

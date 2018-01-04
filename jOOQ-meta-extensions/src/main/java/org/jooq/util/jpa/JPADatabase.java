@@ -50,6 +50,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.UUID;
 
 import javax.persistence.AttributeConverter;
 import javax.persistence.Entity;
@@ -61,6 +62,7 @@ import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.jooq.impl.JPAConverter;
 import org.jooq.tools.JooqLogger;
+import org.jooq.tools.jdbc.JDBCUtils;
 import org.jooq.util.SchemaDefinition;
 import org.jooq.util.h2.H2Database;
 import org.jooq.util.jaxb.ForcedType;
@@ -101,6 +103,12 @@ public class JPADatabase extends H2Database {
     private Connection      connection;
 
     @Override
+    public void close() {
+        JDBCUtils.safeClose(connection);
+        super.close();
+    }
+
+    @Override
     protected DSLContext create0() {
         if (connection == null) {
             String packages = getProperties().getProperty("packages");
@@ -116,7 +124,7 @@ public class JPADatabase extends H2Database {
                 Properties info = new Properties();
                 info.put("user", "sa");
                 info.put("password", "");
-                connection = new org.h2.Driver().connect("jdbc:h2:mem:jooq-meta-extensions", info);
+                connection = new org.h2.Driver().connect("jdbc:h2:mem:jooq-meta-extensions-" + UUID.randomUUID(), info);
 
                 MetadataSources metadata = new MetadataSources(
                     new StandardServiceRegistryBuilder()
