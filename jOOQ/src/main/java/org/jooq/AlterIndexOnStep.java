@@ -38,33 +38,22 @@
 package org.jooq;
 
 // ...
-// ...
-import static org.jooq.SQLDialect.CUBRID;
-// ...
-import static org.jooq.SQLDialect.DERBY;
-import static org.jooq.SQLDialect.FIREBIRD;
 import static org.jooq.SQLDialect.H2;
-// ...
 import static org.jooq.SQLDialect.HSQLDB;
 // ...
-// ...
-import static org.jooq.SQLDialect.MARIADB;
-import static org.jooq.SQLDialect.MYSQL;
-// ...
 import static org.jooq.SQLDialect.POSTGRES;
-import static org.jooq.SQLDialect.SQLITE;
-// ...
 // ...
 
 /**
- * A {@link Query} that can drop indexes.
+ * The step in the <code>ALTER INDEX</code> where the table can be specified for
+ * the index.
  *
  * @author Lukas Eder
  */
-public interface DropIndexOnStep extends DropIndexFinalStep {
+public interface AlterIndexOnStep extends AlterIndexStep {
 
     /**
-     * Specify the table expression on which to drop an index.
+     * Specify the table expression on which to alter an index.
      * <p>
      * {@link SQLDialect#MYSQL}, {@link SQLDialect#MARIADB}, and
      * {@link SQLDialect#SQLSERVER} use table-scoped index names, not
@@ -73,11 +62,11 @@ public interface DropIndexOnStep extends DropIndexFinalStep {
      * index. In all other databases, the <code>ON</code> clause will simply be
      * ignored for compatibility reasons.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
-    DropIndexFinalStep on(Table<?> table);
+    @Support({ H2, HSQLDB, POSTGRES })
+    AlterIndexStep on(Table<?> table);
 
     /**
-     * Specify the table expression on which to drop an index.
+     * Specify the table expression on which to alter an index.
      * <p>
      * {@link SQLDialect#MYSQL}, {@link SQLDialect#MARIADB}, and
      * {@link SQLDialect#SQLSERVER} use table-scoped index names, not
@@ -86,11 +75,11 @@ public interface DropIndexOnStep extends DropIndexFinalStep {
      * index. In all other databases, the <code>ON</code> clause will simply be
      * ignored for compatibility reasons.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
-    DropIndexFinalStep on(String tableName);
+    @Support({ H2, HSQLDB, POSTGRES })
+    AlterIndexStep on(String tableName);
 
     /**
-     * Specify the table expression on which to drop an index.
+     * Specify the table expression on which to alter an index.
      * <p>
      * {@link SQLDialect#MYSQL}, {@link SQLDialect#MARIADB}, and
      * {@link SQLDialect#SQLSERVER} use table-scoped index names, not
@@ -99,6 +88,7 @@ public interface DropIndexOnStep extends DropIndexFinalStep {
      * index. In all other databases, the <code>ON</code> clause will simply be
      * ignored for compatibility reasons.
      */
-    @Support({ CUBRID, DERBY, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
-    DropIndexFinalStep on(Name tableName);
+    @Support({ H2, HSQLDB, POSTGRES })
+    AlterIndexStep on(Name tableName);
+
 }
