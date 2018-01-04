@@ -37,6 +37,7 @@
  */
 package org.jooq.impl;
 
+import static org.jooq.DDLFlag.COMMENT;
 import static org.jooq.DDLFlag.FOREIGN_KEY;
 import static org.jooq.DDLFlag.PRIMARY_KEY;
 import static org.jooq.DDLFlag.SCHEMA;
@@ -53,6 +54,7 @@ import org.jooq.Catalog;
 import org.jooq.Constraint;
 import org.jooq.DDLFlag;
 import org.jooq.DSLContext;
+import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Queries;
 import org.jooq.Query;
@@ -80,21 +82,19 @@ final class DDL {
     private final Query createTable(Table<?> table) {
         List<Constraint> constraints = new ArrayList<Constraint>();
 
-        if (flags.contains(TABLE)) {
-            if (flags.contains(PRIMARY_KEY))
-                for (UniqueKey<?> key : table.getKeys())
-                    if (key.isPrimary())
-                        constraints.add(constraint(key.getName()).primaryKey(key.getFieldsArray()));
+        if (flags.contains(PRIMARY_KEY))
+            for (UniqueKey<?> key : table.getKeys())
+                if (key.isPrimary())
+                    constraints.add(constraint(key.getName()).primaryKey(key.getFieldsArray()));
 
-            if (flags.contains(UNIQUE))
-                for (UniqueKey<?> key : table.getKeys())
-                    if (!key.isPrimary())
-                        constraints.add(constraint(key.getName()).unique(key.getFieldsArray()));
+        if (flags.contains(UNIQUE))
+            for (UniqueKey<?> key : table.getKeys())
+                if (!key.isPrimary())
+                    constraints.add(constraint(key.getName()).unique(key.getFieldsArray()));
 
-            if (flags.contains(FOREIGN_KEY))
-                for (ForeignKey<?, ?> key : table.getReferences())
-                    constraints.add(constraint(key.getName()).foreignKey(key.getFieldsArray()).references(key.getKey().getTable(), key.getKey().getFieldsArray()));
-        }
+        if (flags.contains(FOREIGN_KEY))
+            for (ForeignKey<?, ?> key : table.getReferences())
+                constraints.add(constraint(key.getName()).foreignKey(key.getFieldsArray()).references(key.getKey().getTable(), key.getKey().getFieldsArray()));
 
         return ctx.createTable(table)
                   .columns(table.fields())
@@ -102,10 +102,26 @@ final class DDL {
     }
 
     final Queries queries(Table<?>... tables) {
-        Query[] queries = new Query[tables.length];
+        List<Query> queries = new ArrayList<Query>();
 
-        for (int i = 0; i < tables.length; i++)
-            queries[i] = createTable(tables[i]);
+        for (Table<?> table : tables) {
+            if (flags.contains(TABLE))
+                queries.add(createTable(table));
+
+            if (flags.contains(COMMENT)) {
+                String tComment = table.getComment();
+
+                if (!StringUtils.isEmpty(tComment))
+                    queries.add(ctx.commentOnTable(table).is(tComment));
+
+                for (Field<?> field : table.fields()) {
+                    String fComment = field.getComment();
+
+                    if (!StringUtils.isEmpty(fComment))
+                        queries.add(ctx.commentOnColumn(field).is(fComment));
+                }
+            }
+        }
 
         return ctx.queries(queries);
     }
