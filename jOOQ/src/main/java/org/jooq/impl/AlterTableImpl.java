@@ -60,6 +60,8 @@ import static org.jooq.SQLDialect.DERBY;
 import static org.jooq.SQLDialect.FIREBIRD;
 // ...
 import static org.jooq.SQLDialect.HSQLDB;
+import static org.jooq.SQLDialect.MARIADB;
+import static org.jooq.SQLDialect.MYSQL;
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
 // ...
@@ -163,11 +165,12 @@ final class AlterTableImpl extends AbstractQuery implements
     /**
      * Generated UID
      */
-    private static final long                serialVersionUID               = 8904572826501186329L;
-    private static final Clause[]            CLAUSES                        = { ALTER_TABLE };
-    private static final EnumSet<SQLDialect> NO_SUPPORT_IF_EXISTS           = EnumSet.of(CUBRID, DERBY, FIREBIRD);
-    private static final EnumSet<SQLDialect> SUPPORT_RENAME_TABLE           = EnumSet.of(DERBY);
-    private static final EnumSet<SQLDialect> NO_SUPPORT_ALTER_TYPE_AND_NULL = EnumSet.of(POSTGRES);
+    private static final long                serialVersionUID                      = 8904572826501186329L;
+    private static final Clause[]            CLAUSES                               = { ALTER_TABLE };
+    private static final EnumSet<SQLDialect> NO_SUPPORT_IF_EXISTS                  = EnumSet.of(CUBRID, DERBY, FIREBIRD);
+    private static final EnumSet<SQLDialect> SUPPORT_RENAME_TABLE                  = EnumSet.of(DERBY);
+    private static final EnumSet<SQLDialect> NO_SUPPORT_ALTER_TYPE_AND_NULL        = EnumSet.of(POSTGRES);
+    private static final EnumSet<SQLDialect> REQUIRE_REPEAT_KEYWORD_ON_MULTI_ALTER = EnumSet.of(FIREBIRD, MARIADB, MYSQL);
 
 
 
@@ -988,7 +991,7 @@ final class AlterTableImpl extends AbstractQuery implements
         else if (dropColumns != null) {
             ctx.start(ALTER_TABLE_DROP);
 
-            if (family == FIREBIRD) {
+            if (REQUIRE_REPEAT_KEYWORD_ON_MULTI_ALTER.contains(family)) {
                 String separator = "";
 
                 for (Field<?> dropColumn : dropColumns) {

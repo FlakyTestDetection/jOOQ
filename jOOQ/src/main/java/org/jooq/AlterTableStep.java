@@ -439,7 +439,7 @@ public interface AlterTableStep {
      * <p>
      * This is an alias for {@link #dropColumns(Collection)}.
      */
-    @Support({ H2, FIREBIRD })
+    @Support({ H2, FIREBIRD, MARIADB, MYSQL })
     AlterTableDropStep drop(Field<?>... fields);
 
     /**
@@ -448,7 +448,7 @@ public interface AlterTableStep {
      * <p>
      * This is an alias for {@link #dropColumns(Collection)}.
      */
-    @Support({ H2, FIREBIRD })
+    @Support({ H2, FIREBIRD, MARIADB, MYSQL })
     AlterTableDropStep drop(Name... fields);
 
     /**
@@ -457,28 +457,28 @@ public interface AlterTableStep {
      * <p>
      * This is an alias for {@link #dropColumns(Collection)}.
      */
-    @Support({ H2, FIREBIRD })
+    @Support({ H2, FIREBIRD, MARIADB, MYSQL })
     AlterTableDropStep drop(String... fields);
 
     /**
      * Add an <code>DROP COLUMN</code> clause to the <code>ALTER TABLE</code>
      * statement.
      */
-    @Support({ H2, FIREBIRD })
+    @Support({ H2, FIREBIRD, MARIADB, MYSQL })
     AlterTableDropStep dropColumns(Field<?>... fields);
 
     /**
      * Add an <code>DROP COLUMN</code> clause to the <code>ALTER TABLE</code>
      * statement.
      */
-    @Support({ H2, FIREBIRD })
+    @Support({ H2, FIREBIRD, MARIADB, MYSQL })
     AlterTableDropStep dropColumns(Name... fields);
 
     /**
      * Add an <code>DROP COLUMN</code> clause to the <code>ALTER TABLE</code>
      * statement.
      */
-    @Support({ H2, FIREBIRD })
+    @Support({ H2, FIREBIRD, MARIADB, MYSQL })
     AlterTableDropStep dropColumns(String... fields);
 
     /**
@@ -487,14 +487,14 @@ public interface AlterTableStep {
      * <p>
      * This is an alias for {@link #dropColumns(Collection)}.
      */
-    @Support({ H2, FIREBIRD })
+    @Support({ H2, FIREBIRD, MARIADB, MYSQL })
     AlterTableDropStep drop(Collection<? extends Field<?>> fields);
 
     /**
      * Add an <code>DROP COLUMN</code> clause to the <code>ALTER TABLE</code>
      * statement.
      */
-    @Support({ H2, FIREBIRD })
+    @Support({ H2, FIREBIRD, MARIADB, MYSQL })
     AlterTableDropStep dropColumns(Collection<? extends Field<?>> fields);
 
     /**
