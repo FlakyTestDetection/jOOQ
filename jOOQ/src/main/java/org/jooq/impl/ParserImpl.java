@@ -39,6 +39,7 @@ package org.jooq.impl;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static org.jooq.impl.DSL.abs;
 import static org.jooq.impl.DSL.acos;
 import static org.jooq.impl.DSL.ascii;
 import static org.jooq.impl.DSL.asin;
@@ -3250,7 +3251,7 @@ final class ParserImpl implements Parser {
     private static final FieldOrRow parseTerm(ParserContext ctx, Type type) {
         parseWhitespaceIf(ctx);
 
-        Field<?> field;
+        FieldOrRow field;
         Object value;
 
         switch (ctx.character()) {
@@ -3264,7 +3265,9 @@ final class ParserImpl implements Parser {
             case 'a':
             case 'A':
                 if (N.is(type))
-                    if ((field = parseFieldAsciiIf(ctx)) != null)
+                    if (parseFunctionNameIf(ctx, "ABS"))
+                        return abs((Field) parseFieldSumParenthesised(ctx));
+                    else if ((field = parseFieldAsciiIf(ctx)) != null)
                         return field;
                     else if (parseFunctionNameIf(ctx, "ACOS"))
                         return acos((Field) parseFieldSumParenthesised(ctx));
@@ -3651,6 +3654,15 @@ final class ParserImpl implements Parser {
                     case 'D':
                         parseKeyword(ctx, "D");
                         field = inline(parseDateLiteral(ctx));
+                        break;
+
+                    case 'f':
+                    case 'F':
+                        parseKeyword(ctx, "FN");
+
+                        // TODO: Limit the supported expressions in this context to the ones specified here:
+                        // http://download.oracle.com/otn-pub/jcp/jdbc-4_2-mrel2-eval-spec/jdbc4.2-fr-spec.pdf
+                        field = parseTerm(ctx, type);
                         break;
 
                     case 't':
