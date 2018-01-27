@@ -225,6 +225,7 @@ import static org.jooq.impl.Tools.EMPTY_COMMON_TABLE_EXPRESSION;
 import static org.jooq.impl.Tools.EMPTY_FIELD;
 import static org.jooq.impl.Tools.EMPTY_NAME;
 import static org.jooq.impl.Tools.EMPTY_QUERYPART;
+import static org.jooq.tools.StringUtils.defaultIfNull;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
@@ -764,7 +765,7 @@ final class ParserImpl implements Parser {
                 if (!parseKeywordIf(ctx, "FIRST") && !parseKeywordIf(ctx, "NEXT"))
                     throw ctx.unexpectedToken();
 
-                result.addLimit(inline((int) (long) parseUnsignedInteger(ctx)));
+                result.addLimit(inline((int) (long) defaultIfNull(parseUnsignedIntegerIf(ctx), 1L)));
 
                 if (!parseKeywordIf(ctx, "ROW") && !parseKeywordIf(ctx, "ROWS"))
                     throw ctx.unexpectedToken();
@@ -4584,7 +4585,7 @@ final class ParserImpl implements Parser {
     }
 
     private static final Field<?> parseFieldLengthIf(ParserContext ctx) {
-        if (parseFunctionNameIf(ctx, "LENGTH")) {
+        if (parseFunctionNameIf(ctx, "LENGTH") || parseFunctionNameIf(ctx, "LEN")) {
             parse(ctx, '(');
             Field<String> f1 = (Field) parseField(ctx, S);
             parse(ctx, ')');
