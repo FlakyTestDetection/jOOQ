@@ -182,8 +182,7 @@ class DefaultRenderContext extends AbstractContext<RenderContext> implements Ren
     public RenderContext scopeRegister(QueryPart part) {
         if (scopeLevel >= 0) {
             if (part instanceof TableImpl) {
-                Table<?> table = (Table<?>) part;
-                Table<?> root = table;
+                Table<?> root = (Table<?>) part;
                 Table<?> child = root;
                 List<ForeignKey<?, ?>> keys = new ArrayList<ForeignKey<?, ?>>();
                 List<Table<?>> tables = new ArrayList<Table<?>>();
@@ -225,19 +224,21 @@ class DefaultRenderContext extends AbstractContext<RenderContext> implements Ren
             if (e1.positions == null || e1.joinNode == null)
                 continue outer;
 
-            String replaced = "(" + DSL.using(configuration).renderContext().declareTables(true).render(e1.joinNode.joinTree()) + ")";
-            sql.replace(e1.positions[0], e1.positions[1], replaced);
+            if (!e1.joinNode.children.isEmpty()) {
+                String replaced = "(" + DSL.using(configuration).renderContext().declareTables(true).render(e1.joinNode.joinTree()) + ")";
+                sql.replace(e1.positions[0], e1.positions[1], replaced);
 
-            int shift = replaced.length() - (e1.positions[1] - e1.positions[0]);
+                int shift = replaced.length() - (e1.positions[1] - e1.positions[0]);
 
-            inner:
-            for (ScopeStackElement e2 : scopeStack) {
-                if (e2.positions == null)
-                    continue inner;
+                inner:
+                for (ScopeStackElement e2 : scopeStack) {
+                    if (e2.positions == null)
+                        continue inner;
 
-                if (e2.positions[0] > e1.positions[0]) {
-                    e2.positions[0] = e2.positions[0] + shift;
-                    e2.positions[1] = e2.positions[1] + shift;
+                    if (e2.positions[0] > e1.positions[0]) {
+                        e2.positions[0] = e2.positions[0] + shift;
+                        e2.positions[1] = e2.positions[1] + shift;
+                    }
                 }
             }
         }
